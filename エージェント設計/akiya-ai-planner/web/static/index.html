@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>空き家AIプランナー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eeece8;
+    --panel: #fbfaf8;
+    --text: #2f2e2b;
+    --muted: #85827a;
+    --accent: #3c6e52;
+    --accent-deep: #294c39;
+    --accent-soft: #e6efe1;
+    --clay: #b0603d;
+    --clay-soft: #f3e3d8;
+    --border: #dcdad3;
+    --user-bubble: #3c6e52;
+    --user-bubble-text: #fdfbf5;
+    --agent-bubble: #fffaf0;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(ellipse 620px 420px at 8% -8%, rgba(70,68,62,0.07), transparent 60%),
+      radial-gradient(ellipse 520px 420px at 108% 12%, rgba(70,68,62,0.05), transparent 60%),
+      radial-gradient(ellipse 700px 520px at 50% 118%, rgba(70,68,62,0.06), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+  h1, .brand-mark, button, .nav-link { font-family: "Zen Maru Gothic", "Noto Sans JP", sans-serif; }
+
+  header {
+    padding: 16px 24px 26px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    box-shadow: 0 1px 0 rgba(48,42,32,0.03);
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    color: var(--accent);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .nav-link {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px 4px 14px 4px;
+    padding: 6px 13px;
+    text-decoration: none;
+    white-space: nowrap;
+    display: inline-block;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .nav-link:hover { border-color: var(--accent); transform: translateY(-1px) rotate(-0.6deg); }
+  .nav-link:nth-of-type(2) {
+    background: var(--clay-soft);
+    color: #7a4128;
+    border-radius: 4px 14px 4px 14px;
+  }
+
+  .torn-divider {
+    display: block;
+    width: 100%;
+    height: 14px;
+    margin-top: -1px;
+  }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .msg-row {
+    display: flex;
+  }
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.agent { flex-direction: column; }
+  .bubble {
+    max-width: 78%;
+    padding: 11px 15px;
+    line-height: 1.7;
+    font-size: 14px;
+    white-space: pre-wrap;
+    box-shadow: 0 1px 2px rgba(48,42,32,0.06);
+  }
+  .msg-row.user .bubble {
+    background: var(--user-bubble);
+    color: var(--user-bubble-text);
+    border-radius: 20px 20px 4px 20px;
+  }
+  .msg-row.agent .bubble {
+    background: var(--agent-bubble);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px 20px 20px 20px;
+  }
+  .tool-tag {
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 9px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px;
+    padding: 11px 13px;
+    font-size: 13px;
+    box-shadow: 0 1px 2px rgba(48,42,32,0.05);
+  }
+  .card-title { font-weight: 700; margin-bottom: 4px; }
+  .card-row { color: var(--muted); font-size: 12px; }
+  .match-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+  .match-tag {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px 9px 9px 9px;
+  }
+  .card.subsidy { border-left: 3px solid var(--accent); }
+  .card.continue-chat { border-left: 3px solid var(--accent); }
+  .card.cost, .card.income { border-left: 3px solid var(--clay); }
+  .card.expandable { cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease; }
+  .card.expandable:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .card-toggle { font-size: 11px; color: var(--accent); margin-top: 6px; }
+  .card-detail { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 2px; }
+  .card-detail[hidden] { display: none; }
+  .card.shop-image { border-left: 3px solid #6b5ca0; }
+  .card.shop-image img {
+    width: 100%;
+    border-radius: 4px 12px 12px 12px;
+    margin-top: 6px;
+    display: block;
+  }
+  .card.shop-image .card-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    padding: 16px 20px 18px;
+  }
+  .input-row {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    gap: 9px;
+    align-items: flex-end;
+  }
+  textarea {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 4px 16px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    height: 46px;
+    background: var(--bg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  button {
+    background: var(--accent);
+    color: var(--user-bubble-text);
+    border: none;
+    border-radius: 16px 16px 16px 4px;
+    padding: 0 22px;
+    height: 46px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  button:hover:not(:disabled) { background: var(--accent-deep); transform: translateY(-1px); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; }
+  .loading .bubble { color: var(--muted); font-style: italic; }
+
+  main::-webkit-scrollbar { width: 8px; }
+  main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7 24 L23.5 8 L41 24.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11.5 20.5 V39 C11.5 39.8 12.2 40.5 13 40.5 H33.5 C34.3 40.5 35 39.8 35 39 V20" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 40 V29.5 C20 28.7 20.7 28 21.5 28 H26 C26.8 28 27.5 28.7 27.5 29.5 V40" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M31 15 C33 12.5 33 10 31.5 6.5" stroke="var(--clay)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="31.5" cy="6" r="1.6" fill="var(--clay)"/>
+      </svg>
+      <div>
+        <h1>空き家AIプランナー</h1>
+        <p>チャットで希望を伝えると、空き家候補・改修コスト・収支・補助金をまとめて提案します</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-shrink:0;">
+      <a class="nav-link" href="/">🏠 トップへ</a>
+      <a class="nav-link" id="frontend-link" href="http://localhost:8080/" target="_blank" rel="noopener">🗺️ マップ・PDF出力を見る</a>
+    </div>
+  </div>
+  <svg class="torn-divider" viewBox="0 0 760 14" preserveAspectRatio="none">
+    <path d="M0,4 Q19,0 38,5 T76,4 T114,6 T152,3 T190,5 T228,4 T266,6 T304,3 T342,5 T380,4 T418,6 T456,3 T494,5 T532,4 T570,6 T608,3 T646,5 T684,4 T722,6 T760,4 V14 H0 Z" fill="var(--bg)"/>
+  </svg>
+</header>
+
+<main id="chat-log"></main>
+
+<footer>
+  <div class="input-row">
+    <textarea id="input" placeholder="例: 千葉県でカフェを開きたい。予算は300万円くらい。" onkeydown="handleKeydown(event)" oncompositionstart="handleCompositionStart()" oncompositionend="handleCompositionEnd()"></textarea>
+    <button id="send-btn" onclick="sendMessage()">送信</button>
+  </div>
+  <div class="hint">Enterで送信 / Shift+Enterで改行</div>
+</footer>
+
+<script>
+  // このセッションだけの一時的なID(ページを再読み込みすると新しい会話になります)
+  const sessionState = { id: null };
+
+  // フロント(マップ・グラフ・PDF出力画面、C担当作成)へのリンク先。
+  // ローカルで両方のサーバーを立ち上げている間は http://localhost:8080/ でOK。
+  // フロントを別途デプロイしたら、そのURLに書き換えてください。
+  const FRONTEND_URL = "https://empty-house2026-1.onrender.com/";
+  document.getElementById("frontend-link").href = FRONTEND_URL;
+
+  function el(tag, className, text) {
+    const e = document.createElement(tag);
+    if (className) e.className = className;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function appendMessage(role, text) {
+    const log = document.getElementById("chat-log");
+    const row = el("div", `msg-row ${role}`);
+    const bubble = el("div", "bubble", text);
+    row.appendChild(bubble);
+    log.appendChild(row);
+    log.scrollTop = log.scrollHeight;
+    return bubble;
+  }
+
+  // 空き家カード1件分のDOMを組み立てる(検索結果のツール呼び出し・診断の一発マッチ結果の両方から使う共通処理)。
+  function buildAkiyaCard(p) {
+    const card = el("div", "card akiya expandable");
+
+    // 診断のクイックマッチ結果には、なぜこの物件がマッチしたかの理由タグ(エリア一致・予算内など)が
+    // 付いてくることがある。あれば見出しの上に小さなタグとして表示する。
+    if (p.match_reasons && p.match_reasons.length > 0) {
+      const tagRow = el("div", "match-tags");
+      for (const reason of p.match_reasons) {
+        tagRow.appendChild(el("span", "match-tag", reason));
+      }
+      card.appendChild(tagRow);
+    }
+
+    const priceText = (p.price_man_yen === null || p.price_man_yen === undefined) ? "価格応相談" : `${p.price_man_yen}万円`;
+    card.appendChild(el("div", "card-title", `${p.title || p.municipality || p.area}(${priceText})`));
+    if (p.area) card.appendChild(el("div", "card-row", `📍 ${p.area}`));
+    card.appendChild(el("div", "card-row",
+      `延床${p.building_area_sqm}㎡ / ${p.structure} / ${p.layout}${p.floors ? ` / ${p.floors}階建` : ""}`));
+
+    // 築年数・土地面積・改修費目安など、わかる範囲で補足情報を1行にまとめる。
+    const extraBits = [];
+    if (p.built_year && p.built_year !== "-" && p.built_year !== "不詳") extraBits.push(`築${p.built_year}`);
+    if (p.land_area_sqm) extraBits.push(`土地${p.land_area_sqm}㎡`);
+    if (p.renovation_cost_est_man_yen !== null && p.renovation_cost_est_man_yen !== undefined) {
+      extraBits.push(`改修費目安 約${p.renovation_cost_est_man_yen}万円`);
+    }
+    if (extraBits.length > 0) card.appendChild(el("div", "card-row", extraBits.join(" / ")));
+
+    if (p.features) card.appendChild(el("div", "card-row", p.features));
+
+    // クリックすると、この物件を選択した状態でフロント(マップ・グラフ・PDF出力画面)を新しいタブで開く。
+    const toggle = el("div", "card-toggle", "🗺️ マップ・PDF出力で見る");
+    card.appendChild(toggle);
+
+    if (p.id) {
+      card.addEventListener("click", () => {
+        window.open(`${FRONTEND_URL}?property_id=${p.id}`, "_blank");
+      });
+    }
+
+    return card;
+  }
+
+  // 補助金カード1件分のDOMを組み立てる(検索結果のツール呼び出し・診断の一発マッチ結果の両方から使う共通処理)。
+  function buildSubsidyCard(s) {
+    const card = el("div", "card subsidy");
+    card.appendChild(el("div", "card-title", s.title));
+    card.appendChild(el("div", "card-row", `${s.provider} / 上限${s.max_amount_man_yen}万円 / ${s.subsidy_rate}`));
+    if (s.conditions) card.appendChild(el("div", "card-row", s.conditions));
+    return card;
+  }
+
+  // 診断フォームの一発マッチ結果(Geminiを介さない)をチャットのカードとして表示する。
+  function renderAkiyaCards(container, results) {
+    if (!results || results.length === 0) return;
+    const wrap = el("div", "cards");
+    for (const p of results) {
+      wrap.appendChild(buildAkiyaCard(p));
+    }
+    if (wrap.children.length > 0) container.appendChild(wrap);
+  }
+
+  // 診断フォームの一発マッチに紐づく補助金・支援制度をチャットのカードとして表示する。
+  function renderSubsidyCards(container, subsidies) {
+    if (!subsidies || subsidies.length === 0) return;
+    const wrap = el("div", "cards");
+    for (const s of subsidies) {
+      wrap.appendChild(buildSubsidyCard(s));
+    }
+    if (wrap.children.length > 0) container.appendChild(wrap);
+  }
+
+  // 診断の一発マッチ結果が気に入らなかった時に、そのままAIとの会話に進めるようにするボタン。
+  // クリックすると診断の回答内容を最初のメッセージとして/api/chatに送り、Geminiとの
+  // 通常の会話(検索・提案)にフォールバックする。
+  function renderContinueChatPrompt(container, summaryText) {
+    const wrap = el("div", "cards");
+    const card = el("div", "card continue-chat expandable");
+    card.appendChild(el("div", "card-title", "🤖 気に入る物件がなければ"));
+    card.appendChild(el("div", "card-row", "AIに相談して、ほかの候補を探してもらう"));
+    card.addEventListener("click", () => {
+      wrap.remove();
+      sendMessage(
+        `${summaryText} さっき提案してもらった物件はどれも気に入らなかったので、ほかの候補を提案してください。`
+      );
+    });
+    wrap.appendChild(card);
+    container.appendChild(wrap);
+  }
+
+  function renderToolResults(container, toolCalls) {
+    if (!toolCalls || toolCalls.length === 0) return;
+    const wrap = el("div", "cards");
+
+    for (const tc of toolCalls) {
+      if (tc.name === "search_akiya" && tc.result && tc.result.results) {
+        for (const p of tc.result.results) {
+          wrap.appendChild(buildAkiyaCard(p));
+        }
+      }
+      if (tc.name === "estimate_renovation_cost" && tc.result) {
+        const r = tc.result;
+        const card = el("div", "card cost");
+        card.appendChild(el("div", "card-title", `改修コスト概算: 約${r.estimated_cost_man_yen}万円`));
+        if (r.cost_range_man_yen) {
+          card.appendChild(el("div", "card-row", `想定レンジ: ${r.cost_range_man_yen.min}〜${r.cost_range_man_yen.max}万円`));
+        }
+        wrap.appendChild(card);
+      }
+      if (tc.name === "simulate_income" && tc.result) {
+        const r = tc.result;
+        const card = el("div", "card income");
+        card.appendChild(el("div", "card-title", `月次収支概算: 利益 約${r.monthly_profit_man_yen}万円/月`));
+        card.appendChild(el("div", "card-row",
+          `売上 約${r.monthly_revenue_man_yen}万円 / コスト 約${r.monthly_cost_man_yen}万円`
+          + (r.payback_period_years ? ` / 投資回収 約${r.payback_period_years}年` : "")));
+        wrap.appendChild(card);
+      }
+      if (tc.name === "search_subsidies" && tc.result && tc.result.results) {
+        for (const s of tc.result.results) {
+          wrap.appendChild(buildSubsidyCard(s));
+        }
+      }
+      if (tc.name === "generate_shop_image" && tc.result) {
+        const r = tc.result;
+        const card = el("div", "card shop-image");
+        if (r.image_base64) {
+          card.appendChild(el("div", "card-title", "🎨 AIが生成したイメージ"));
+          const img = document.createElement("img");
+          img.src = `data:${r.mime_type || "image/png"};base64,${r.image_base64}`;
+          img.alt = "AIが生成した店舗・ロゴのイメージ画像";
+          card.appendChild(img);
+          card.appendChild(el("div", "card-note", "※AIによるイメージ案です。実際のデザインを保証するものではありません。"));
+        } else {
+          card.appendChild(el("div", "card-title", "🎨 画像を生成できませんでした"));
+          if (r.error) card.appendChild(el("div", "card-row", r.error));
+        }
+        wrap.appendChild(card);
+      }
+    }
+
+    if (wrap.children.length > 0) container.appendChild(wrap);
+  }
+
+  async function sendMessage(presetText) {
+    const input = document.getElementById("input");
+    const btn = document.getElementById("send-btn");
+    const text = (presetText !== undefined ? presetText : input.value).trim();
+    if (!text) return;
+
+    appendMessage("user", text);
+    input.value = "";
+    btn.disabled = true;
+
+    const log = document.getElementById("chat-log");
+    const loadingRow = el("div", "msg-row agent loading");
+    loadingRow.appendChild(el("div", "bubble", "考え中..."));
+    log.appendChild(loadingRow);
+    log.scrollTop = log.scrollHeight;
+
+    try {
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionState.id, message: text }),
+      });
+      loadingRow.remove();
+
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        appendMessage("agent", `エラーが発生しました: ${errBody.detail || resp.statusText}`);
+        return;
+      }
+
+      const data = await resp.json();
+      sessionState.id = data.session_id;
+      const bubbleContainer = appendMessage("agent", data.reply).parentElement;
+      renderToolResults(bubbleContainer, data.tool_calls);
+    } catch (err) {
+      loadingRow.remove();
+      appendMessage("agent", `通信エラーが発生しました: ${err}`);
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  }
+
+  // 日本語入力(IME)変換中に確定のEnterで誤送信しないようにするためのフラグ。
+  // compositionstart〜compositionendの間は変換中とみなし、Enterでは送信しない。
+  let isComposing = false;
+
+  function handleCompositionStart() {
+    isComposing = true;
+  }
+
+  function handleCompositionEnd() {
+    isComposing = false;
+  }
+
+  function handleKeydown(e) {
+    // isComposing: 変換中かどうかの標準的な判定。
+    // keyCode === 229: 一部ブラウザでcompositionendの発火タイミングがずれるための保険。
+    if (e.key === "Enter" && !e.shiftKey && !isComposing && e.keyCode !== 229) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // 診断フォーム(/diagnosis)から遷移してきた場合の処理。
+  // 1) 一発マッチできた場合(quickmatch=1): Geminiには問い合わせず、
+  //    診断フォーム側からsessionStorage経由で受け取った検索結果をそのままカード表示する。
+  //    (Gemini APIの呼び出し回数を消費しないため。)
+  // 2) マッチしなかった場合: 従来通り、回答内容を最初のユーザー発言として自動送信し、
+  //    Geminiとの会話をスタートする。
+  const params = new URLSearchParams(window.location.search);
+  const diagnosisText = params.get("diagnosis");
+  const isQuickMatch = params.get("quickmatch") === "1";
+
+  let quickMatchResults = [];
+  let quickMatchSubsidies = [];
+  let quickMatchSummary = "";
+  if (isQuickMatch) {
+    try {
+      quickMatchResults = JSON.parse(sessionStorage.getItem("quickMatchResults") || "[]");
+    } catch (err) {
+      quickMatchResults = [];
+    }
+    try {
+      quickMatchSubsidies = JSON.parse(sessionStorage.getItem("quickMatchSubsidies") || "[]");
+    } catch (err) {
+      quickMatchSubsidies = [];
+    }
+    quickMatchSummary = sessionStorage.getItem("quickMatchSummary") || "空き家の相談をしたいです。";
+    sessionStorage.removeItem("quickMatchResults");
+    sessionStorage.removeItem("quickMatchSubsidies");
+    sessionStorage.removeItem("quickMatchSummary");
+  }
+
+  if (isQuickMatch && quickMatchResults.length > 0) {
+    // 実際にはGeminiを呼ばず一瞬で結果が出せてしまうが、あえて「考え中...」を挟んで
+    // チャットらしい間を作ってから結果を表示する。
+    const log = document.getElementById("chat-log");
+    const loadingRow = el("div", "msg-row agent loading");
+    loadingRow.appendChild(el("div", "bubble", "考え中..."));
+    log.appendChild(loadingRow);
+    log.scrollTop = log.scrollHeight;
+
+    setTimeout(() => {
+      loadingRow.remove();
+      const bubbleContainer = appendMessage(
+        "agent",
+        "診断結果をもとに、こんな空き家が見つかりました!気になる物件をクリックすると、マップ・PDF出力画面で詳しく見られます。"
+      ).parentElement;
+      renderAkiyaCards(bubbleContainer, quickMatchResults);
+
+      if (quickMatchSubsidies.length > 0) {
+        const subsidyBubbleContainer = appendMessage(
+          "agent",
+          "このエリアだと、こんな補助金・支援制度も使えるかもしれません。"
+        ).parentElement;
+        renderSubsidyCards(subsidyBubbleContainer, quickMatchSubsidies);
+      }
+
+      const continueBubbleContainer = appendMessage(
+        "agent",
+        "気になる物件はありましたか?"
+      ).parentElement;
+      renderContinueChatPrompt(continueBubbleContainer, quickMatchSummary);
+    }, 900);
+  } else if (diagnosisText) {
+    appendMessage("agent", "診断ありがとうございます!内容をもとに、合いそうな空き家を探しますね。");
+    sendMessage(diagnosisText);
+  } else {
+    appendMessage("agent", "こんにちは。移住や空き家活用について、気になっていることを教えてください。");
+  }
+</script>
+</body>
+</html>

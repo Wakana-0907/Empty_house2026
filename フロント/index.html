@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>空き家AIプランナー</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#FBF9F4] text-[#22344B] min-h-screen flex flex-col font-sans">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-[#EFE9DD] px-6 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🏠</span>
+            <h1 class="text-xl font-bold font-serif-jp tracking-wide">空き家AIプランナー</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <a id="chat-link" href="#" target="_blank" class="text-xs bg-[#FBF9F4] hover:bg-[#EFE9DD] text-[#22344B] border border-[#EFE9DD] px-3 py-1.5 rounded-full font-medium transition">
+                💬 AIに相談する
+            </a>
+            <span class="text-xs text-[#5C7A99] font-medium">VORN Challenge 2026</span>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- 左カラム：検索・マップ・物件カード -->
+        <section class="space-y-4 flex flex-col">
+            <!-- エリア選択フィルター -->
+            <div class="panel p-3 flex items-center gap-3 bg-white rounded-lg border border-[#EFE9DD] shadow-sm">
+                <label for="prefSelect" class="text-xs font-bold text-[#22344B] whitespace-nowrap flex items-center gap-1">
+                    <span>🔍</span> エリア絞り込み:
+                </label>
+                <select id="prefSelect" class="input-field w-full p-2 text-sm font-medium bg-[#FBF9F4] border border-[#EFE9DD] rounded focus:outline-none">
+                    <option value="none">エリアを選択してください</option>
+                </select>
+            </div>
+
+            <!-- 候補物件マップ -->
+            <div class="panel p-4 flex-1 flex flex-col relative bg-white rounded-lg border border-[#EFE9DD] shadow-sm">
+                <div class="mb-2 flex justify-between items-center flex-wrap gap-2">
+                    <h2 class="text-lg font-serif-jp font-bold flex items-center gap-2 text-[#22344B]">
+                        <span>📍</span> 候補物件マップ
+                    </h2>
+                    <div id="amenityStatus" class="status-badge text-xs font-medium text-[#5C7A99]">
+                        物件を選択してください
+                    </div>
+                </div>
+                <div id="map" class="w-full h-[360px] rounded border border-[#EFE9DD]"></div>
+            </div>
+
+            <!-- 周辺環境バッジ付き物件カードリスト -->
+            <div class="panel p-3 bg-white rounded-lg border border-[#EFE9DD] shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-xs font-bold text-[#22344B]">物件一覧（周辺環境バッジ付き）</p>
+                    <span class="text-[10px] text-[#5C7A99]">カードクリックで地図移動</span>
+                </div>
+                <div id="propertyCardList" class="flex gap-3 overflow-x-auto pb-2 min-h-[95px]">
+                    <!-- JSでカードが自動生成されます -->
+                </div>
+            </div>
+
+            <!-- 選択中物件の要約カード -->
+            <div id="houseDetailCard" class="panel p-4 bg-[#F5F2EB] rounded-lg border border-[#EFE9DD]">
+                <div class="flex items-center justify-between border-b border-[#EFE9DD] pb-2 mb-2">
+                    <span class="text-xs font-bold text-[#B0862A] uppercase tracking-wider">SELECTED PROPERTY</span>
+                    <span id="detailAddress" class="text-xs text-[#5C7A99]">所在地: -</span>
+                </div>
+                <h3 class="text-base font-serif-jp font-bold text-[#22344B] mb-2" id="detailName">物件を選択してください</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="p-2 bg-white rounded border border-[#EFE9DD]">
+                        <span class="text-[#5C7A99] block text-[10px]">改修コスト目安</span>
+                        <span id="detailCost" class="font-bold text-[#22344B]">-</span>
+                    </div>
+                    <div class="p-2 bg-white rounded border border-[#EFE9DD]">
+                        <span class="text-[#5C7A99] block text-[10px]">想定用途</span>
+                        <span id="detailUsage" class="font-bold text-[#22344B]">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右カラム：収支・補助金・PDF出力 -->
+        <section class="space-y-4 flex flex-col">
+            <!-- 収支シミュレーション -->
+            <div class="panel p-4 bg-white rounded-lg border border-[#EFE9DD] shadow-sm">
+                <h2 class="text-lg font-serif-jp font-bold flex items-center gap-2 text-[#22344B] mb-3">
+                    <span>📊</span> 収支シミュレーション (5年)
+                </h2>
+                <div class="h-[220px] relative">
+                    <canvas id="financeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 利用できる補助金 -->
+            <div class="panel p-4 flex-1 bg-white rounded-lg border border-[#EFE9DD] shadow-sm flex flex-col">
+                <h2 class="text-lg font-serif-jp font-bold flex items-center gap-2 text-[#22344B] mb-3">
+                    <span>💰</span> 利用できる補助金
+                </h2>
+                <div id="subsidyList" class="space-y-2 overflow-y-auto max-h-[220px] flex-1 pr-1">
+                    <p class="text-slate-500 py-4 text-center text-xs">物件を選択してください</p>
+                </div>
+            </div>
+
+            <!-- 提案書ダウンロードボタン -->
+            <button onclick="downloadPDF()" class="w-full bg-[#B0862A] hover:bg-[#957122] text-white font-bold py-3.5 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2 text-sm">
+                <span>📄</span> 提案書(PDF)を出力・ダウンロード
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Main JS -->
+    <script src="script.js"></script>
+</body>
+</html>
